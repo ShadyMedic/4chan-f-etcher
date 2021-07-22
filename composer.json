@@ -1,0 +1,8 @@
+{
+    "name": "shady/4chan-scraper",
+    "type": "project",
+    "require": {
+        "gemorroj/archive7z": "^5.1",
+      "ext-curl": "*"
+    }
+}
