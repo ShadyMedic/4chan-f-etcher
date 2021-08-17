@@ -55,84 +55,149 @@ class DataProcessor
             
             echo '<div style="border: 1px solid black; background-color: #FFFFFF;">'; //Color will be replaced before ob gets outputted
             
+            //Check if the post isn't already saved
             $id = $entry['post_id'];
-            $statement = $this->db->prepare('SELECT COUNT(*) as "cnt" FROM flashes WHERE post_id = ?');
+            $statement = $this->db->prepare('SELECT COUNT(*) as "cnt" FROM posts WHERE post_id = ?');
             $statement->execute(array($id));
             if ($statement->fetch()['cnt'] !== 0) {
                 //Entry already saved
                 echo '<div>Post ID '.$entry['post_id'].' is already saved</div>';
                 $color = "#BBFFFF";
-            } else {
-                $fileName = $entry['post_id'].'.swf';
-                echo '<div>Downloading SWF file for post ID '.$entry['post_id'].'</div>';
-                /*
-                echo '<p>'.utf8_encode($entry['download']).'</p>';
-                echo '<p>'.utf8_decode($entry['download']).'</p>';
-                echo '<p>'.urlencode($entry['download']).'</p>';
-                echo '<p>'.urldecode($entry['download']).'</p>';
-                */
-                /*
-                $ch = curl_init($entry['download']);
-                $fp = fopen(self::DOWNLOADS_FOLDER.'/'.$fileName, 'wb');
-                curl_setopt($ch, CURLOPT_FILE, $fp);
-                curl_setopt($ch, CURLOPT_HEADER, 0);
-                $downloadResult = curl_exec($ch);
-                curl_close($ch);
-                fclose($fp);
-                */
-                
-                error_reporting(E_ALL & ~E_WARNING);
-                
-                if (file_put_contents(self::DOWNLOADS_FOLDER.'/'.$fileName,
-                    file_get_contents($entry['download']))) {
-                    //if ($downloadResult && filesize(self::DOWNLOADS_FOLDER.'/'.$fileName) > 0) {
-                    echo '<div>Download successful</div>';
-                    $status = "ARCHIVED";
-                    $downloadLink = null; //Not needed
-                    $color = "#99FF99";
-                } else {
-                    echo '<div>File download failed. Try downloading it manually from <a href="'.$entry['download'].
-                         '">'.$entry['download'].'</a></div>';
-                    unlink(self::DOWNLOADS_FOLDER.'/'.urlencode($fileName));
-                    $status = "NOT ARCHIVED";
-                    $downloadLink = $entry['download'];
-                    $color = "#FF9999";
-                }
-                
-                //Save metadata to the database
-                $statement = $this->db->prepare("INSERT INTO flashes (post_id, time_posted, author, subject, category, filename, size, status, download_link, source) VALUES (?,?,?,?,?,?,?,?,?,?)");
-                $statement->execute(array(
-                    $entry['post_id'],
-                    $entry['time_posted'],
-                    $entry['author'],
-                    $entry['subject'],
-                    $entry['category'],
-                    $entry['filename'],
-                    $entry['size'],
-                    $status,
-                    $downloadLink,
-                    $entry['source']
-                ));
-                
-                //Save metadata file
-                $metadata = 'Subject: '.$entry['subject'].'
-Original filename: '.$entry['filename'].'
-Category: '.$entry['category'].'
-Author: '.$entry['author'].'
-Source: '.$entry['source'].'
-Time posted: '.$entry['time_posted'].'
-';
-                file_put_contents(self::META_FOLDER.'/'.$entry['post_id'].'.txt', $metadata);
-                echo 'Saved data for post ID '.$id.'<br>';
-                
-                error_reporting(E_ALL);
+                $this->finishPostOutput($color);
+                continue;
             }
             
-            echo '</div>';
+            $fileName = $entry['post_id'].'.swf';
+            echo '<div>Downloading SWF file for post ID '.$entry['post_id'].'</div>';
+            /*
+            echo '<p>'.utf8_encode($entry['download']).'</p>';
+            echo '<p>'.utf8_decode($entry['download']).'</p>';
+            echo '<p>'.urlencode($entry['download']).'</p>';
+            echo '<p>'.urldecode($entry['download']).'</p>';
+            */
+            /*
+            $ch = curl_init($entry['download']);
+            $fp = fopen(self::DOWNLOADS_FOLDER.'/'.$fileName, 'wb');
+            curl_setopt($ch, CURLOPT_FILE, $fp);
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            $downloadResult = curl_exec($ch);
+            curl_close($ch);
+            fclose($fp);
+            */
             
-            $output = str_replace('#FFFFFF', $color, ob_get_contents());
-            ob_end_clean();
-            echo $output;
+            error_reporting(E_ALL & ~E_WARNING);
+            
+            if (!file_put_contents(self::DOWNLOADS_FOLDER.'/'.$fileName, file_get_contents($entry['download']))) {
+                echo '<div>File download failed. Try downloading it manually from <a href="'.$entry['download'].'">'.
+                     $entry['download'].'</a></div>';
+                unlink(self::DOWNLOADS_FOLDER.'/'.urlencode($fileName));
+                $status = "NOT ARCHIVED";
+                $downloadLink = $entry['download'];
+                $color = "#FF9999";
+                
+                $this->savePostMetadata($entry, $this->saveFlashMetadata($entry['size'], null, $status, $downloadLink));
+                echo 'Saved data for post ID '.$id.'<br>';
+                $this->finishPostOutput($color);
+                
+                error_reporting(E_ALL);
+                continue;
+            }
+            error_reporting(E_ALL);
+            
+            //Downloaded successfully
+            echo '<div>Download successful</div>';
+            
+            //Check hash
+            $hash = hash_file("sha256", self::DOWNLOADS_FOLDER.'/'.$fileName);
+            $statement = $this->db->prepare('SELECT flash_id FROM flashes WHERE hash = ?');
+            $statement->execute(array($hash));
+            $flashId = $statement->fetch();
+            if ($flashId && !empty($flashId['flash_id'])) {
+                //Flash is a duplicate
+                echo '<div>Flash posed in post ID '.$entry['post_id'].' is a duplicate of Flash ID '.
+                     $flashId['flash_id'].'</div>';
+                $color = "#FFBBFF";
+                $this->savePostMetadata($entry, $flashId['flash_id']);
+                $this->finishPostOutput($color);
+                continue;
+            }
+            
+            //Flash is unique
+            $status = "ARCHIVED";
+            $downloadLink = null; //Not needed
+            $color = "#99FF99";
+            $this->savePostMetadata($entry, $this->saveFlashMetadata($entry['size'], $hash, $status, $downloadLink));
+            $this->finishPostOutput($color);
         }
+    }
+    
+    /**
+     * Call this right before starting to process another post in the process method
+     * Closes the output buffer
+     */
+    private function finishPostOutput($color)
+    {
+        echo '</div>';
+        
+        $output = str_replace('#FFFFFF', $color, ob_get_contents());
+        ob_end_clean();
+        echo $output;
+    }
+    
+    /**
+     * Saves the metadata of the post into database and into the textfile
+     */
+    private function savePostMetadata($postInfo, $flashId)
+    {
+        //Save metadata of the post to the database
+        $statement = $this->db->prepare("INSERT INTO posts (post_id, time_posted, author, subject, category, filename, flash_id, source) VALUES (?,?,?,?,?,?,?,?)");
+        $statement->execute(array(
+            $postInfo['post_id'],
+            $postInfo['time_posted'],
+            $postInfo['author'],
+            $postInfo['subject'],
+            $postInfo['category'],
+            $postInfo['filename'],
+            $flashId,
+            $postInfo['source']
+        ));
+        
+        //Save metadata file
+        $metadata = 'Subject: '.$postInfo['subject'].'
+Original filename: '.$postInfo['filename'].'
+Category: '.$postInfo['category'].'
+Author: '.$postInfo['author'].'
+Source: '.$postInfo['source'].'
+Time posted: '.$postInfo['time_posted'].'
+';
+        if (file_exists(self::META_FOLDER.'/'.$flashId.'.txt')) {
+            //Append new set of metadata to an existing one
+            $metadata = '
+[THE SAME FILE WAS POSTED WITH THE FOLLOWING METADATA AGAIN]
+
+'.$metadata;
+            file_put_contents(self::META_FOLDER.'/'.$postInfo['post_id'].'.txt', $metadata, FILE_APPEND);
+        } else {
+            //Create new metadata file
+            file_put_contents(self::META_FOLDER.'/'.$postInfo['post_id'].'.txt', $metadata);
+        }
+    }
+    
+    /**
+     * Saves metadata of the flash file into the database
+     * @return int ID of the insterted record
+     */
+    private function saveFlashMetadata($size, $hash, $status, $download_link)
+    {
+        //Save metadata of the flash to the database
+        $statement = $this->db->prepare("INSERT INTO flashes (size, hash, status, download_link) VALUES (?,?,?,?)");
+        $statement->execute(array(
+            $size,
+            $hash,
+            $status,
+            $download_link
+        ));
+        
+        return $this->db->lastInsertId();
     }
 }
