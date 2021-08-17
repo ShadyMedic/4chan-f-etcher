@@ -1,6 +1,9 @@
 <?php
 
-
+/**
+ * Class taking care of data extracted from the HTML table from 4chan.org/f, downloading SWF files and saving
+ * everything in the database and file system
+ */
 class DataProcessor
 {
     private const DOWNLOADS_FOLDER = 'downloads';

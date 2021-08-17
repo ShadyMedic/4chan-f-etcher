@@ -1,6 +1,8 @@
 <?php
 
-
+/**
+ * Controller that takes care of collecting new posts from 4chan
+ */
 class Controller
 {
     public function process()

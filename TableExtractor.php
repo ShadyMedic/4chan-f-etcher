@@ -1,6 +1,8 @@
 <?php
 
-
+/**
+ * Class extracting data from the downloaded HTML table and sorting them into associative array
+ */
 class TableExtractor
 {
     private $input;

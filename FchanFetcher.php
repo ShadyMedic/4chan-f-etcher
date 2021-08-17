@@ -1,6 +1,8 @@
 <?php
 
-
+/**
+ * Class downloading the HTML page of the upload board index
+ */
 class FchanFetcher
 {
     private const INDEX_URL = 'https://boards.4chan.org/f/';
