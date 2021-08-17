@@ -6,8 +6,8 @@
  */
 class DataProcessor
 {
-    private const DOWNLOADS_FOLDER = 'downloads';
-    private const META_FOLDER = 'metadata';
+    public const DOWNLOADS_FOLDER = 'downloads';
+    public const META_FOLDER = 'metadata';
     
     private $db;
     

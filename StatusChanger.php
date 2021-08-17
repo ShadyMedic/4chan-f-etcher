@@ -23,18 +23,21 @@ class StatusChanger
      * @param string $currentStatus Status that the entry must have now (prevention against request forgery attack)
      * @return bool TRUE if the status is successfully changed, FALSE if the use didn't enter proper access code on the index page
      */
-    public function updateStatus(int $post_id, string $newStatus, string $currentStatus): bool
+    public function updateStatus(int $flash_id, string $newStatus, string $currentStatus): bool
     {
         if (empty($_COOKIE) || !isset($_COOKIE['accesscode']) || ($_COOKIE['accesscode'] !== self::ACCESSCODE && $_COOKIE['accesscode'] !== self::ADMIN_CODE)) {
             return false;
         }
         
         if ($newStatus === "LOST") {
-            $statement = $this->db->prepare('DELETE FROM flashes WHERE post_id = ? AND status = "NOT ARCHIVED"');
-            return $statement->execute(array($post_id));
+            require 'DataProcessor.php';
+            unlink(DataProcessor::META_FOLDER.'/'.$flash_id.'.txt'); //Delete the metadata file
+            
+            $statement = $this->db->prepare('DELETE FROM flashes WHERE flash_id = ? AND status = "NOT ARCHIVED"');
+            return $statement->execute(array($flash_id));
         } else {
-            $statement = $this->db->prepare('UPDATE flashes SET status = ? WHERE post_id = ? AND status = ?');
-            return $statement->execute(array($newStatus, $post_id, $currentStatus));
+            $statement = $this->db->prepare('UPDATE flashes SET status = ? WHERE flash_id = ? AND status = ?');
+            return $statement->execute(array($newStatus, $flash_id, $currentStatus));
         }
     }
 }

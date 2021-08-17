@@ -1,6 +1,8 @@
 <?php
 
-
+/**
+ * Class fetching data from the database and creating associative array for the view
+ */
 class TableGenerator
 {
     private $db;
@@ -17,14 +19,16 @@ class TableGenerator
      */
     public function generate(): array
     {
-        $result = $this->db->query('SELECT * FROM flashes ORDER BY post_id DESC');
+        $result = $this->db->query('SELECT * FROM posts JOIN flashes ON flashes.flash_id = posts.flash_id ORDER BY post_id DESC;');
         $data = $result->fetchAll();
-        $table = array();
-        
+        # $table = array();
+        $table = $data;
+        /*
         foreach ($data as $tableRow)
         {
             $temp = array();
             
+            $temp[] = $tableRow['flash_id'];
             $temp[] = $tableRow['post_id'];
             $temp[] = $tableRow['subject'];
             $temp[] = $tableRow['filename'];
@@ -38,6 +42,7 @@ class TableGenerator
             
             $table[] = $temp;
         }
+        */
         
         return $table;
     }

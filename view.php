@@ -34,69 +34,69 @@
     $table = (new TableGenerator())->generate();
     foreach ($table as $row) {
         echo '<tr>';
-        echo '<td>'.$row[0].'</td>';
-        echo '<td>'.$row[1].'</td>';
-        echo '<td style="max-width: 15vw;">'.$row[2].'</td>';
-        echo '<td style="text-align: right">'.$row[3].'</td>';
-        echo '<td style="text-align: center">'.$row[4].'</td>';
-        echo '<td>'.$row[5].'</td>';
-        echo '<td style="max-width: 10vw; word-wrap: normal; white-space: nowrap;">'.$row[6].'</td>';
-        echo '<td>'.$row[7].'</td>';
+        echo '<td>'.$row['post_id'].'</td>';
+        echo '<td>'.$row['subject'].'</td>';
+        echo '<td style="max-width: 15vw;">'.$row['filename'].'</td>';
+        echo '<td style="text-align: right">'.$row['size'].'</td>';
+        echo '<td style="text-align: center">'.$row['category'].'</td>';
+        echo '<td>'.$row['author'].'</td>';
+        echo '<td style="max-width: 10vw; word-wrap: normal; white-space: nowrap;">'.$row['source'].'</td>';
+        echo '<td>'.$row['time_posted'].'</td>';
         
         //First button (download)
-        if ($row[8] !== "NOT ARCHIVED" && $row[8] !== "FLASHFREEZED") {
-            echo '<td class="actions">'.'<a href="downloads/'.$row[0].
+        if ($row['status'] !== "NOT ARCHIVED" && $row['status'] !== "FLASHFREEZED") {
+            echo '<td class="actions">'.'<a href="downloads/'.$row['flash_id'].
                  '.swf" class="swfDownloadLink" download><button style="background-color: #99FFFF" title="Downloads the SWF file" onclick="swapDownloadLink(event)">Download SWF</button></a>'.
-                 '<a href="metadata/'.$row[0].
+                 '<a href="metadata/'.$row['flash_id'].
                  '.txt" class="metaDownloadLink" style="display:none" download><button style="background-color: #d599ff" title="Downloads the SWF file" onclick="swapDownloadLink(event)">Download Metadata</button></a>'.
                  '</td>';
         } else {
-            if ($row[8] === "FLASHFREEZED") {
-                echo '<td class="actions" colspan="3"><a href="'.$row[9].
+            if ($row['status'] === "FLASHFREEZED") {
+                echo '<td class="actions" colspan="3"><a href="'.$row['download_link'].
                      '" target="_blank"><button style="background-color: #5890ff" title="Downloads an archive containing this SWF file along with many other flashfreezed SWFs">Download Flashfreezed Batch</button></a></td>';
             } else {
-                echo '<td class="actions"><a href="'.$row[9].
+                echo '<td class="actions"><a href="'.$row['download_link'].
                      '"><button style="background-color: #999999" title="Downloads the SWF file from 4chan">Get from 4chan</button></a></td>';
             }
         }
         
         //Second button (uncuratable/upload)
-        if ($row[8] === "ARCHIVED") {
-            echo '<td class="actions"><a href="uncuratable.php?pid='.$row[0].
+        if ($row['status'] === "ARCHIVED") {
+            echo '<td class="actions"><a href="uncuratable.php?fid='.$row['flash_id'].
                  '"><button style="background-color: #FFFF99" title="Marks this curation as uncuratable because it violates one of Flashpoint rules (usually because it\'s a video embeded in SWF)">Mark as uncuratable</button></a></td>';
         } else {
-            if ($row[8] === "NOT ARCHIVED") {
+            if ($row['status'] === "NOT ARCHIVED") {
                 echo '
                     <td class="actions">
                         <form action="upload.php" method="POST" enctype="multipart/form-data">
-                            <input name="pid" type="hidden" value="'.$row[0].'"/>
+                            <input name="fid" type="hidden" value="'.$row['flash_id'].'"/>
                             <input name="flashFile" type="file" accept=".swf"/>
                             <input type="submit"/>
                         </form>
                     </td>';
             } else {
-                if ($row[8] !== "FLASHFREEZED") {
+                if ($row['status'] !== "FLASHFREEZED") {
                     echo '<td></td>';
                 }
             }
         }
         
         //Third button (curated/lost)
-        if ($row[8] === "ARCHIVED") {
-            echo '<td class="actions"><a href="curate.php?pid='.$row[0].
+        if ($row['status'] === "ARCHIVED") {
+            echo '<td class="actions"><a href="curate.php?fid='.$row['flash_id'].
                  '"><button style="background-color: #99FF99" title="Marks this curation as curated">Mark as curated</button></a></td>';
         } else {
-            if ($row[8] === "NOT ARCHIVED") {
-                echo '<td class="actions"><a href="lose.php?pid='.$row[0].
+            if ($row['status'] === "NOT ARCHIVED") {
+                echo '<td class="actions"><a href="lose.php?fid='.$row['flash_id'].
                      '"><button style="background-color: #992222; color: #FFFFFF" title="Marks this file as lost and deletes its metadata">Mark as slipped</button></a></td>';
             } else {
-                if ($row[8] !== "FLASHFREEZED") {
+                if ($row['status'] !== "FLASHFREEZED") {
                     echo '<td></td>';
                 }
             }
         }
         
-        switch ($row[8]) {
+        switch ($row['status']) {
             case 'NOT ARCHIVED':
                 $color = "#BB4444";
                 $lore = "Only metadata of this file has been saved, not the file itself. Please, download it manually and upload it.";
@@ -118,7 +118,7 @@
                 $lore = "Somebody marked this file curated and probably uploaded it to one of the curation channels.";
                 break;
         }
-        echo '<td style="text-align: center; background-color: '.$color.'" title="'.$lore.'">'.$row[8].'</td>';
+        echo '<td style="text-align: center; background-color: '.$color.'" title="'.$lore.'">'.$row['status'].'</td>';
         
         echo '</tr>';
     }
