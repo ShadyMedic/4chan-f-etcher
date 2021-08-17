@@ -67,7 +67,6 @@ class DataProcessor
                 continue;
             }
             
-            $fileName = $entry['post_id'].'.swf';
             echo '<div>Downloading SWF file for post ID '.$entry['post_id'].'</div>';
             /*
             echo '<p>'.utf8_encode($entry['download']).'</p>';
@@ -87,10 +86,11 @@ class DataProcessor
             
             error_reporting(E_ALL & ~E_WARNING);
             
-            if (!file_put_contents(self::DOWNLOADS_FOLDER.'/'.$fileName, file_get_contents($entry['download']))) {
+            if (!file_put_contents(self::DOWNLOADS_FOLDER.'/currentDownload.swf',
+                file_get_contents($entry['download']))) {
                 echo '<div>File download failed. Try downloading it manually from <a href="'.$entry['download'].'">'.
                      $entry['download'].'</a></div>';
-                unlink(self::DOWNLOADS_FOLDER.'/'.urlencode($fileName));
+                unlink(self::DOWNLOADS_FOLDER.'/currentDownload.swf');
                 $status = "NOT ARCHIVED";
                 $downloadLink = $entry['download'];
                 $color = "#FF9999";
@@ -108,21 +108,29 @@ class DataProcessor
             echo '<div>Download successful</div>';
             
             //Check hash
-            $hash = hash_file("sha256", self::DOWNLOADS_FOLDER.'/'.$fileName);
+            $hash = hash_file("sha256", self::DOWNLOADS_FOLDER.'/currentDownload.swf');
             $statement = $this->db->prepare('SELECT flash_id FROM flashes WHERE hash = ?');
             $statement->execute(array($hash));
-            $flashId = $statement->fetch();
-            if ($flashId && !empty($flashId['flash_id'])) {
+            $queryResult = $statement->fetch();
+            if ($queryResult && !empty($queryResult['flash_id'])) {
                 //Flash is a duplicate
+                $flashId = $queryResult['flash_id'];
                 echo '<div>Flash posed in post ID '.$entry['post_id'].' is a duplicate of Flash ID '.
-                     $flashId['flash_id'].'</div>';
+                     $flashId.'</div>';
+                unlink(self::DOWNLOADS_FOLDER.'/currentDownload.swf');
                 $color = "#FFBBFF";
-                $this->savePostMetadata($entry, $flashId['flash_id']);
+                $this->savePostMetadata($entry, $flashId);
                 $this->finishPostOutput($color);
                 continue;
             }
+    
+            $statement = $this->db->prepare('SELECT flash_id FROM flashes ORDER BY flash_id DESC LIMIT 1');
+            $statement->execute(array());
+            $newId = $statement->fetch()['flash_id'] + 1;
             
             //Flash is unique
+            rename(self::DOWNLOADS_FOLDER.'/currentDownload.swf',
+                self::DOWNLOADS_FOLDER.'/'.$newId.'.swf');
             $status = "ARCHIVED";
             $downloadLink = null; //Not needed
             $color = "#99FF99";
@@ -176,10 +184,10 @@ Time posted: '.$postInfo['time_posted'].'
 [THE SAME FILE WAS POSTED WITH THE FOLLOWING METADATA AGAIN]
 
 '.$metadata;
-            file_put_contents(self::META_FOLDER.'/'.$postInfo['post_id'].'.txt', $metadata, FILE_APPEND);
+            file_put_contents(self::META_FOLDER.'/'.$flashId.'.txt', $metadata, FILE_APPEND);
         } else {
             //Create new metadata file
-            file_put_contents(self::META_FOLDER.'/'.$postInfo['post_id'].'.txt', $metadata);
+            file_put_contents(self::META_FOLDER.'/'.$flashId.'.txt', $metadata);
         }
     }
     
