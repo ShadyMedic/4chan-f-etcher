@@ -30,7 +30,7 @@ class StatusChanger
         }
         
         if ($newStatus === "LOST") {
-            require 'DataProcessor.php';
+            require_once 'DataProcessor.php';
             unlink(DataProcessor::META_FOLDER.'/'.$flash_id.'.txt'); //Delete the metadata file
             
             $statement = $this->db->prepare('DELETE FROM flashes WHERE flash_id = ? AND status = "NOT ARCHIVED"');
