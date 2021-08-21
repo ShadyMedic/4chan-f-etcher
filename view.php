@@ -44,7 +44,7 @@
         echo '<td>'.$row['time_posted'].'</td>';
         
         //First button (download)
-        if ($row['status'] !== "NOT ARCHIVED" && $row['status'] !== "FLASHFREEZED") {
+        if ($row['status'] !== "NOT ARCHIVED" && $row['status'] !== "FLASHFREEZED" && $row['status'] !== "WEBARCHIVED") {
             echo '<td class="actions">'.'<a href="downloads/'.$row['flash_id'].
                  '.swf" class="swfDownloadLink" download><button style="background-color: #99FFFF" title="Downloads the SWF file" onclick="swapDownloadLink(event)">Download SWF</button></a>'.
                  '<a href="metadata/'.$row['flash_id'].
@@ -54,6 +54,9 @@
             if ($row['status'] === "FLASHFREEZED") {
                 echo '<td class="actions" colspan="3"><a href="'.$row['download_link'].
                      '" target="_blank"><button style="background-color: #5890ff" title="Downloads an archive containing this SWF file along with many other flashfreezed SWFs">Download Flashfreezed Batch</button></a></td>';
+            } else if ($row['status'] === "WEBARCHIVED") {
+                echo '<td class="actions" colspan="3"><a href="'.$row['download_link'].
+                     '" target="_blank"><button style="background-color: #ddaaff" title="Downloads an archive containing this SWF file along with many other uncuratable SWFs">Download From Web Archive</button></a></td>';
             } else {
                 echo '<td class="actions"><a href="'.$row['download_link'].
                      '"><button style="background-color: #999999" title="Downloads the SWF file from 4chan">Get from 4chan</button></a></td>';
@@ -75,7 +78,7 @@
                         </form>
                     </td>';
             } else {
-                if ($row['status'] !== "FLASHFREEZED") {
+                if ($row['status'] !== "FLASHFREEZED" && $row['status'] !== "WEBARCHIVED") {
                     echo '<td></td>';
                 }
             }
@@ -90,7 +93,7 @@
                 echo '<td class="actions"><a href="lose.php?fid='.$row['flash_id'].
                      '"><button style="background-color: #992222; color: #FFFFFF" title="Marks this file as lost and deletes its metadata">Mark as slipped</button></a></td>';
             } else {
-                if ($row['status'] !== "FLASHFREEZED") {
+                if ($row['status'] !== "FLASHFREEZED" && $row['status'] !== "WEBARCHIVED") {
                     echo '<td></td>';
                 }
             }
@@ -112,6 +115,10 @@
             case 'FLASHFREEZED':
                 $color = "#99FFFF";
                 $lore = "This file has been uploaded in Flashfreeze. If you want to curate it, please, download the whole batch.";
+                break;
+            case 'WEBARCHIVED':
+                $color = "#DDAAFF";
+                $lore = "This file has been uploaded to Web Archive. It's marked as uncuratable, because it violates Flashpoint rules. If you want to get it, you need to download the whole batch.";
                 break;
             case 'CURATED':
                 $color = "#99FF99";
