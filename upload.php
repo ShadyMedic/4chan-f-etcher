@@ -29,8 +29,11 @@ if (file_exists(DataProcessor::DOWNLOADS_FOLDER.'/'.$flashId.'.swf')) {
 
 move_uploaded_file($_FILES['flashFile']['tmp_name'], DataProcessor::DOWNLOADS_FOLDER.DIRECTORY_SEPARATOR.'currentUpload.swf');
 
-//Check hash
 $db = Db::connect();
+$statement = $db->prepare('UPDATE flashes SET download_link = NULL WHERE flash_id = ?');
+$statement->execute(array($flashId));
+
+//Check hash
 $hash = hash_file("sha256", DataProcessor::DOWNLOADS_FOLDER.DIRECTORY_SEPARATOR.'currentUpload.swf');
 $statement = $db->prepare('SELECT flash_id FROM flashes WHERE hash = ?');
 $statement->execute(array($hash));

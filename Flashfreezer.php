@@ -31,7 +31,7 @@ class Flashfreezer
     public function freeze()
     {
         $dirname = $this->createTempDirectory();
-        
+        /*
         $archive = new Archive7z($dirname.'.7z');
         $archive->addEntry($dirname.'/');
         
@@ -73,25 +73,26 @@ class Flashfreezer
             //Create new freeze record
             $statement = $this->db->prepare('INSERT INTO freezes (url,flashes,size,delete_key) VALUES (?,?,?,?)');
             $statement->execute(array($downloadUrl, count($this->archivingIds), $uploadedSize, $deleteKey));
-            
+            */
             //Update statuses of freezed entries
-            $statement = $this->db->prepare('UPDATE flashes SET status = "FLASHFREEZED", download_link = ? WHERE post_id IN ('.
+            $statement = $this->db->prepare('UPDATE flashes SET status = "FLASHFREEZED", download_link = ? WHERE flash_id IN ('.
                                             implode(',', $this->archivingIds).
                                             ')'); //archivingIds is safe - it was fetched from the "flashes" table
-            $statement->execute(array($downloadUrl));
-            
+            $statement->execute(array('TODO'));
+            # $statement->execute(array($downloadUrl));
+            /*
             //Delete archive file
             unlink($dirname.'.7z');
             
             //Delete temporary folder
             $this->deleteTempDirectory($dirname);
-            
+            */
             //Delete freezed files and their metadata files
             $this->deleteFreezedFiles();
             
             return true;
-        }
-        return false;
+        /*}
+        return false;*/
     }
     
     /**
@@ -103,7 +104,7 @@ class Flashfreezer
     private function createTempDirectory(): string
     {
         //Fetch basic metadata of entries whose status is "ARCHIVED"
-        $result = $this->db->query('SELECT post_id, filename, time_posted FROM flashes WHERE status = "ARCHIVED" ORDER BY time_posted ASC');
+        $result = $this->db->query('SELECT flash_id FROM flashes WHERE status = "ARCHIVED" ORDER BY flash_id ASC');
         $data = $result->fetchAll();
         
         if (count($data) === 0) {
@@ -112,27 +113,27 @@ class Flashfreezer
         
         $files = array();
         foreach ($data as $row) {
-            $files[$row['post_id']] = $row['filename'];
-            $this->archivingIds[] = $row['post_id'];
+            $this->archivingIds[] = $row['flash_id'];
         }
-        $dateFrom = (new DateTime($data[0]['time_posted']))->format('Y.m.d');
-        $dateTo = (new DateTime($data[count($data) - 1]['time_posted']))->format('Y.m.d');
         
-        $tempFolderName = '4chan-scrape-'.$dateFrom.'-'.$dateTo;
+        $tempFolderName = '4chan-scrape';
         
         if (is_dir($tempFolderName)) {
             $this->deleteTempDirectory($tempFolderName);
         }
         
-        foreach ($files as $id => $filename) {
+        foreach ($this->archivingIds as $id) {
             mkdir($tempFolderName.'/'.$id, 0777, true);
-            
+	
+	        //Copy the SWF file to the temporary directory
             if (file_exists(self::DOWNLOADS_FOLDER.'/'.$id.'.swf')) {
-                copy(self::DOWNLOADS_FOLDER.'/'.$id.'.swf', $tempFolderName.'/'.$id.'/'.$filename.'.swf');
-            } //Copy the SWF file to the temporary directory
-            if (file_exists(self::META_FOLDER.'/'.$id.'.txt')) {
-                copy(self::META_FOLDER.'/'.$id.'.txt', $tempFolderName.'/'.$id.'/metadata.txt');
-            } //Copy the metadata file to the temporary directory
+                copy(self::DOWNLOADS_FOLDER.'/'.$id.'.swf', $tempFolderName.'/'.$id.'/flash.swf');
+            }
+            
+	        //Create a link file to the meta file
+	        file_put_contents($tempFolderName.'/'.$id.'/metadata.url', '[InternetShortcut]
+URL='.$_SERVER['SERVER_NAME'].'/metadata/'.$id.'.txt
+');
         }
         return $tempFolderName;
     }
@@ -184,9 +185,6 @@ class Flashfreezer
         foreach ($this->archivingIds as $id) {
             if (file_exists(self::DOWNLOADS_FOLDER.'/'.$id.'.swf')) {
                 unlink(self::DOWNLOADS_FOLDER.'/'.$id.'.swf');
-            }
-            if (file_exists(self::META_FOLDER.'/'.$id.'.txt')) {
-                unlink(self::META_FOLDER.'/'.$id.'.txt');
             }
         }
     }
