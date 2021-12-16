@@ -9,6 +9,6 @@ if (!$statusChanger->updateStatus($flash_id, 'LOST', 'NOT ARCHIVED')) {
     die('Valid access code for changing statuses was not found.<br>Return to homepage and fill in the form please.');
 }
 
-unlink('metadata/'.$post_id.'.txt');
+unlink('metadata/'.$flash_id.'.txt');
 
 header("Location: view.php");
