@@ -47,7 +47,7 @@ class TableExtractor
                 //Extract download link and full file name
                 $a = new SimpleXMLElement($dom->saveHTML($cell->childNodes[1]));
                 $data[$i / $j]['file'] = $a['title'];
-                $data[$i / $j]['download'] = substr($a['href'], 2);
+                $data[$i / $j]['download'] = str_replace('\'', '%26%23039%3B', substr($a['href'], 2));
             }
     
             if ($header[$i % $j] === 'subject') {

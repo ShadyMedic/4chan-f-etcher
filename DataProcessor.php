@@ -44,7 +44,7 @@ class DataProcessor
             $parsedData['filename'] = $entry['file'];
             $parsedData['size'] = round((strpos($entry['size'], 'KB') !== false) ? explode(' ', $entry['size'])[0] :
                 explode(' ', $entry['size'])[0] * 1000);
-            $parsedData['download'] = 'http://'.urldecode($entry['download']);
+            $parsedData['download'] = 'http://'.$entry['download'];
             $parsedData['source'] = 'https://boards.4chan.org/f/'.urldecode($entry['source']);
             
             $allParsedData[] = $parsedData;
