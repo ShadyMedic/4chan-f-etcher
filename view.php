@@ -39,7 +39,7 @@
         echo '<td style="max-width: 15vw;">'.$row['filename'].'</td>';
         echo '<td style="text-align: right">'.$row['size'].'</td>';
         echo '<td style="text-align: center">'.$row['category'].'</td>';
-        echo '<td>'.$row['author'].'</td>';
+        echo '<td style="max-width: 15vw;">'.$row['author'].'</td>';
         echo '<td style="max-width: 10vw; word-wrap: normal; white-space: nowrap;">'.$row['source'].'</td>';
         echo '<td>'.$row['time_posted'].'</td>';
         
