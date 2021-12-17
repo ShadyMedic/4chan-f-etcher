@@ -35,14 +35,15 @@ $statement->execute(array($flashId));
 
 //Check hash
 $hash = hash_file("sha256", DataProcessor::DOWNLOADS_FOLDER.DIRECTORY_SEPARATOR.'currentUpload.swf');
-$statement = $db->prepare('SELECT flash_id FROM flashes WHERE hash = ?');
+$statement = $db->prepare('SELECT flash_id, metafile FROM flashes WHERE hash = ?');
 $statement->execute(array($hash));
 $queryResult = $statement->fetch();
 if ($queryResult && !empty($queryResult['flash_id'])) {
 	//Uploaded flash is a duplicate
 	$originalFlashId = $queryResult['flash_id'];
+	$originalFlashMetafile = $queryResult['metafile'];
 	unlink(DataProcessor::DOWNLOADS_FOLDER.DIRECTORY_SEPARATOR.'currentUpload.swf');
-	file_put_contents(DataProcessor::META_FOLDER.DIRECTORY_SEPARATOR.$originalFlashId.'.txt',
+	file_put_contents(DataProcessor::META_FOLDER.DIRECTORY_SEPARATOR.$originalFlashMetafile.'.txt',
 		'
 [THE SAME FILE WAS POSTED WITH THE FOLLOWING METADATA AGAIN]
 

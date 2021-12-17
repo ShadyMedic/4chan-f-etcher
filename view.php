@@ -47,7 +47,7 @@
         if ($row['status'] !== "NOT ARCHIVED" && $row['status'] !== "FLASHFREEZED" && $row['status'] !== "WEBARCHIVED") {
             echo '<td class="actions">'.'<a href="downloads/'.$row['flash_id'].
                  '.swf" class="swfDownloadLink" download><button style="background-color: #99FFFF" title="Downloads the SWF file" onclick="swapDownloadLink(event)">Download SWF</button></a>'.
-                 '<a href="metadata/'.$row['flash_id'].
+                 '<a href="metadata/'.$row['metafile'].
                  '.txt" class="metaDownloadLink" style="display:none" download><button style="background-color: #d599ff" title="Downloads the SWF file" onclick="swapDownloadLink(event)">Download Metadata</button></a>'.
                  '</td>';
         } else {

@@ -67,7 +67,7 @@ class DataProcessor
                 continue;
             }
             
-            echo '<div>Downloading SWF file for post ID '.$entry['post_id'].'</div>';
+            echo '<div>Downloading SWF file for post ID '.$id.'</div>';
             /*
             echo '<p>'.utf8_encode($entry['download']).'</p>';
             echo '<p>'.utf8_decode($entry['download']).'</p>';
@@ -95,7 +95,8 @@ class DataProcessor
                 $downloadLink = $entry['download'];
                 $color = "#FF9999";
                 
-                $this->savePostMetadata($entry, $this->saveFlashMetadata($entry['size'], null, $status, $downloadLink));
+				$generalId = $this->saveFlashMetadata($entry['size'], null, $status, $downloadLink);
+                $this->savePostMetadata($entry, $generalId, $generalId); //Use the same ID for the flash file and its metafile when it's new record
                 echo 'Saved data for post ID '.$id.'<br>';
                 $this->finishPostOutput($color);
                 
@@ -109,17 +110,18 @@ class DataProcessor
             
             //Check hash
             $hash = hash_file("sha256", self::DOWNLOADS_FOLDER.'/currentDownload.swf');
-            $statement = $this->db->prepare('SELECT flash_id FROM flashes WHERE hash = ?');
+            $statement = $this->db->prepare('SELECT flash_id, metafile FROM flashes WHERE hash = ?');
             $statement->execute(array($hash));
             $queryResult = $statement->fetch();
             if ($queryResult && !empty($queryResult['flash_id'])) {
                 //Flash is a duplicate
                 $flashId = $queryResult['flash_id'];
-                echo '<div>Flash posed in post ID '.$entry['post_id'].' is a duplicate of Flash ID '.
+                $flashMetaId = $queryResult['metafile'];
+                echo '<div>Flash posed in post ID '.$id.' is a duplicate of Flash ID '.
                      $flashId.'</div>';
                 unlink(self::DOWNLOADS_FOLDER.'/currentDownload.swf');
                 $color = "#FFBBFF";
-                $this->savePostMetadata($entry, $flashId);
+                $this->savePostMetadata($entry, $flashId, $flashMetaId);
                 $this->finishPostOutput($color);
                 continue;
             }
@@ -134,7 +136,8 @@ class DataProcessor
             $status = "ARCHIVED";
             $downloadLink = null; //Not needed
             $color = "#99FF99";
-            $this->savePostMetadata($entry, $this->saveFlashMetadata($entry['size'], $hash, $status, $downloadLink));
+			$generalId = $this->saveFlashMetadata($entry['size'], $hash, $status, $downloadLink);
+            $this->savePostMetadata($entry, $generalId, $generalId); //Use the same ID for flash and its metafile when the file is new
             $this->finishPostOutput($color);
         }
     }
@@ -155,7 +158,7 @@ class DataProcessor
     /**
      * Saves the metadata of the post into database and into the textfile
      */
-    private function savePostMetadata($postInfo, $flashId)
+    private function savePostMetadata($postInfo, $flashId, $flashMetafileId)
     {
         //Save metadata of the post to the database
         $statement = $this->db->prepare("INSERT INTO posts (post_id, time_posted, author, subject, category, filename, flash_id, source) VALUES (?,?,?,?,?,?,?,?)");
@@ -178,16 +181,16 @@ Author: '.$postInfo['author'].'
 Source: '.$postInfo['source'].'
 Time posted: '.$postInfo['time_posted'].'
 ';
-        if (file_exists(self::META_FOLDER.'/'.$flashId.'.txt')) {
+        if (file_exists(self::META_FOLDER.'/'.$flashMetafileId.'.txt')) {
             //Append new set of metadata to an existing one
             $metadata = '
 [THE SAME FILE WAS POSTED WITH THE FOLLOWING METADATA AGAIN]
 
 '.$metadata;
-            file_put_contents(self::META_FOLDER.'/'.$flashId.'.txt', $metadata, FILE_APPEND);
+            file_put_contents(self::META_FOLDER.'/'.$flashMetafileId.'.txt', $metadata, FILE_APPEND);
         } else {
             //Create new metadata file
-            file_put_contents(self::META_FOLDER.'/'.$flashId.'.txt', $metadata);
+            file_put_contents(self::META_FOLDER.'/'.$flashMetafileId.'.txt', $metadata);
         }
     }
     
@@ -195,17 +198,27 @@ Time posted: '.$postInfo['time_posted'].'
      * Saves metadata of the flash file into the database
      * @return int ID of the insterted record
      */
-    private function saveFlashMetadata($size, $hash, $status, $download_link)
+    private function saveFlashMetadata(/*$metaId, */$size, $hash, $status, $download_link)
     {
         //Save metadata of the flash to the database
         $statement = $this->db->prepare("INSERT INTO flashes (size, hash, status, download_link) VALUES (?,?,?,?)");
         $statement->execute(array(
+			//$metafile,
             $size,
             $hash,
             $status,
             $download_link
         ));
         
-        return $this->db->lastInsertId();
+		$id = $this->db->lastInsertId();
+		
+		$statement = $this->db->prepare("UPDATE flashes SET metafile = ? WHERE flash_id = ?");
+        $statement->execute(array(
+			//$metaId,
+			$id,
+			$id
+        ));
+		
+        return $id;
     }
 }
